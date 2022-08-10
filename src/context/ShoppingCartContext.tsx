@@ -1,5 +1,12 @@
-import { createContext, useContext, ReactNode, useState } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
 import { ShoppingCart } from "../components/ShoppingCart";
+import { StoreItemProps } from "../components/StoreItem";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 type ShoppingCartProviderProps = {
   children: ReactNode;
@@ -14,6 +21,7 @@ type ShoppingCartContext = {
   removeFromCart: (id: number) => void;
   cartQuantity: number;
   cartItems: CartItem[];
+  getProducts: StoreItemProps[];
 };
 
 type CartItem = {
@@ -29,10 +37,19 @@ export function useShoppingCart() {
 
 export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const [products, setProducts] = useState<StoreItemProps[]>([]);
+
   const [cartItems, setCartItems] = useLocalStorage<CartItem[]>(
     "shopping-cart",
     []
   );
+
+  useEffect(() => {
+    fetch("https://fakestoreapi.com/products?sort=desc")
+      .then((response) => response.json())
+      .then((res) => setProducts(res.slice(0, 20)));
+  }, [products]);
 
   const cartQuantity = cartItems.reduce(
     (quantity, item) => item.quantity + quantity,
@@ -44,6 +61,8 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
   function getItemQuantity(id: number) {
     return cartItems.find((item) => item.id === id)?.quantity || (0 as number);
   }
+
+  const getProducts = products;
 
   function increaseCartQuantity(id: number) {
     setCartItems((cartItems) => {
@@ -92,6 +111,7 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
         removeFromCart,
         cartQuantity,
         cartItems,
+        getProducts,
       }}
     >
       {children}
